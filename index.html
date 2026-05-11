@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,16 +6,16 @@
 <title>World Cup Gods</title>
 <script src="telegram.org"></script>
 <style>
-  body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; }
+  body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; user-select: none; }
   h1 { text-align:center; color:#ffd700; font-size:18px; margin:10px 0; }
-  .grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; }
-  .card { background:#1a1f1a; border-radius:10px; padding:8px; text-align:center; cursor:pointer; }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; } /* Оптимально для телефонов */
+  .card { background:#1a1f1a; border-radius:10px; padding:8px; text-align:center; cursor:pointer; border: 1px solid #222; }
   .card img { width:40px; height:30px; border-radius:3px; object-fit: cover; }
   .card .name { font-size:11px; margin:5px 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-  .counters { font-size:10px; }
+  .counters { font-size:10px; display: flex; justify-content: space-around; }
   .gold { color:#ffd700; }
   .red { color:#ff4444; }
-  button { width:100%; padding:8px; border:none; border-radius:5px; margin:3px 0; font-weight:bold; cursor:pointer; }
+  button { width:100%; padding:12px; border:none; border-radius:8px; margin:8px 0; font-weight:bold; cursor:pointer; }
   .bless { background:#ffd700; color:#000; }
   .curse { background:#8b0000; color:#fff; }
   .detail { display:none; padding:20px; text-align:center; }
@@ -26,15 +26,15 @@
 
 <div id="home">
   <h1>⚽️ WORLD CUP GODS</h1>
-  <div class="grid" id="grid"></div>
+  <div class="grid" id="grid">Загрузка данных...</div>
 </div>
 
 <div id="detail" class="detail">
   <a class="back" onclick="closeDetail()">← Назад</a>
-  <img id="dflag" src="" width="80" onerror="this.src='flagcdn.com'"><br>
-  <span id="dname" style="font-size:20px;"></span>
-  <div style="margin:20px 0;">
-    <span class="gold">🙏 Благословений: <b id="dbless">0</b></span><br>
+  <img id="dflag" src="" width="120" style="border-radius:5px;"><br>
+  <h2 id="dname" style="font-size:24px; margin:15px 0;"></h2>
+  <div style="margin:20px 0; background: #1a1f1a; padding: 15px; border-radius:10px;">
+    <span class="gold">🙏 Благословений: <b id="dbless">0</b></span><br><br>
     <span class="red">🧿 Проклятий: <b id="dcurse">0</b></span>
   </div>
   <button class="bless" onclick="pay('bless')">🙏 БЛАГОСЛОВИТЬ (10 ⭐️)</button>
@@ -45,7 +45,7 @@
 // Инициализация Telegram WebApp
 if (window.Telegram && window.Telegram.WebApp) {
   Telegram.WebApp.ready();
-  Telegram.WebApp.expand(); // Разворачиваем приложение на весь экран
+  Telegram.WebApp.expand();
 }
 
 const TEAMS = [
@@ -59,37 +59,29 @@ const TEAMS = [
   "Швеция","Норвегия","Польша","Украина","Венгрия","Турция"
 ];
 
-const FLAGS = (code) => `github.io{code.toUpperCase()}.svg`;
+// Массив CODES восстановлен и синхронизирован
+const CODES = ["ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
+               "ma","jp","kr","sn","gh","ng","cm","tn","eg","sa","ir","qa",
+               "au","nz","us","ca","cr","jm","uy","co","cl","pe","ec","py",
+               "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"];
 
-function renderGrid() {
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '';
-  TEAMS.forEach((team, i) => {
-    const s = stats[i] || {bless:0, curse:0};
-    
-    // Для Англии (gb) в этом пакете используется код GB, код верный. 
-    // Если какой-то флаг не подгрузится, onerror подставит стандартную заглушку.
-    grid.innerHTML += `
-      <div class="card" onclick="openDetail(${i})">
-        <img src="${FLAGS(CODES[i])}" onerror="this.src='github.io'">
-        <div class="name">${team}</div>
-        <div class="counters">
-          <span class="gold">🙏${s.bless||0}</span>
-          <span class="red">🧿${s.curse||0}</span>
-        </div>
-      </div>`;
-  });
-}
+// Надежный CDN источник для загрузки SVG флагов
+const FLAGS = (code) => `cloudflare.com{code.toLowerCase()}.svg`;
 
-// Загрузка статистики из Google Sheets (Замените URL ниже на ваш реальный макрос)
+let currentTeam = -1;
+let stats = {};
+
+// Ссылка на ваш рабочий Google Apps Script
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPSDY3YX3ptXjfXG5QSejj9KhbSmYSspXf9iBkgxEAB4JFZZ--L_2UVdaQ6zqv_Ykk/exec';
+
 async function loadStats() {
   try {
-    const res = await fetch('https://script.google.com/macros/s/AKfycbzPSDY3YX3ptXjfXG5QSejj9KhbSmYSspXf9iBkgxEAB4JFZZ--L_2UVdaQ6zqv_Ykk/exec');
+    const res = await fetch(SCRIPT_URL);
     stats = await res.json();
     renderGrid();
   } catch (e) {
     console.error("Ошибка загрузки данных:", e);
-    renderGrid(); // Рендерим пустую сетку, если БД недоступна
+    renderGrid();
   }
 }
 
@@ -130,38 +122,50 @@ function updateDetail() {
   document.getElementById('dcurse').innerText = s.curse||0;
 }
 
-function pay(type) {
+// Корректная функция запроса платежного инвойса у Google скрипта
+async function pay(type) {
   if (!window.Telegram || !window.Telegram.WebApp) {
     alert("Пожалуйста, откройте приложение внутри Telegram");
     return;
   }
 
-  const title = type === 'bless' ? '🙏 Благословение ' + TEAMS[currentTeam] : '🧿 Проклятие ' + TEAMS[currentTeam];
-  const amount = type === 'bless' ? 10 : 20;
-  
-  // Отправляем инвойс через Telegram API
-  Telegram.WebApp.openInvoice({
-    title: title,
-    description: type === 'bless' ? 'Увеличить Силу команды' : 'Наложить Порчу на команду',
-    payload: `${CODES[currentTeam]}_${type}`,
-    provider_token: '', // Оставляем пустым для платежей в Telegram Stars (XTR)
-    currency: 'XTR',
-    prices: [{label: title, amount: amount}]
-  }, (status) => {
-    if (status === 'paid') {
-      // Обновляем счетчик на экране мгновенно для пользователя
-      if (!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
-      stats[currentTeam][type]++;
-      updateDetail();
-      renderGrid();
-    } else {
-      console.log("Статус платежа:", status);
+  // Показываем визуальный индикатор загрузки платежа
+  if (Telegram.WebApp.showScanQrPopup) {
+    Telegram.WebApp.showScanQrPopup({ text: "Создание платежа..." });
+    setTimeout(() => Telegram.WebApp.closeScanQrPopup(), 1000);
+  }
+
+  try {
+    // Отправляем запрос серверной части Google Apps Script на генерацию реальной платежной ссылки
+    const response = await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`);
+    const data = await response.json();
+    
+    if (!data.invoice_url) {
+      Telegram.WebApp.showAlert("Ошибка: не удалось сгенерировать инвойс. Проверьте Bot Token в Google Script.");
+      return;
     }
-  });
+
+    // Передаем полученную t.me/invoice... ссылку в интерфейс Telegram
+    Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
+      if (status === 'paid') {
+        Telegram.WebApp.showAlert("🎉 Оплата успешна! Ваш голос отправлен в базу данных.");
+        if (!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
+        stats[currentTeam][type]++;
+        updateDetail();
+        renderGrid();
+      } else if (status === 'failed') {
+        Telegram.WebApp.showAlert("❌ Ошибка при проведении платежа Stars.");
+      }
+    });
+
+  } catch (error) {
+    console.error("Ошибка шлюза платежей:", error);
+    Telegram.WebApp.showAlert("Сервер базы данных временно недоступен.");
+  }
 }
 
-// Обновляем данные каждые 15 секунд (увеличено, чтобы снизить нагрузку на лимиты Google скриптов)
-setInterval(loadStats, 15000);
+// Автообновление раз в 20 секунд для снижения лимитов Google квот
+setInterval(loadStats, 20000);
 loadStats();
 </script>
 </body>
