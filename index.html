@@ -1,18 +1,17 @@
-`html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>World Cup Gods</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="telegram.org"></script>
 <style>
   body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; }
   h1 { text-align:center; color:#ffd700; font-size:18px; margin:10px 0; }
   .grid { display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; }
   .card { background:#1a1f1a; border-radius:10px; padding:8px; text-align:center; cursor:pointer; }
-  .card img { width:40px; height:30px; border-radius:3px; }
-  .card .name { font-size:11px; margin:5px 0; }
+  .card img { width:40px; height:30px; border-radius:3px; object-fit: cover; }
+  .card .name { font-size:11px; margin:5px 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
   .counters { font-size:10px; }
   .gold { color:#ffd700; }
   .red { color:#ff4444; }
@@ -20,7 +19,7 @@
   .bless { background:#ffd700; color:#000; }
   .curse { background:#8b0000; color:#fff; }
   .detail { display:none; padding:20px; text-align:center; }
-  .back { color:#ffd700; text-decoration:underline; margin-bottom:20px; display:block; }
+  .back { color:#ffd700; text-decoration:underline; margin-bottom:20px; display:block; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -32,7 +31,7 @@
 
 <div id="detail" class="detail">
   <a class="back" onclick="closeDetail()">← Назад</a>
-  <img id="dflag" src="" width="80"><br>
+  <img id="dflag" src="" width="80" onerror="this.src='flagcdn.com'"><br>
   <span id="dname" style="font-size:20px;"></span>
   <div style="margin:20px 0;">
     <span class="gold">🙏 Благословений: <b id="dbless">0</b></span><br>
@@ -43,6 +42,12 @@
 </div>
 
 <script>
+// Инициализация Telegram WebApp
+if (window.Telegram && window.Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand(); // Разворачиваем приложение на весь экран
+}
+
 const TEAMS = [
   "Аргентина","Бразилия","Мексика","Франция","Англия","Германия",
   "Испания","Португалия","Италия","Нидерланды","Бельгия","Хорватия",
@@ -54,7 +59,7 @@ const TEAMS = [
   "Швеция","Норвегия","Польша","Украина","Венгрия","Турция"
 ];
 
-const FLAGS = (code) => https://flagcdn.com/w80/${code.toLowerCase()}.png;
+const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.png`;
 const CODES = ["ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
                "ma","jp","kr","sn","gh","ng","cm","tn","eg","sa","ir","qa",
                "au","nz","us","ca","cr","jm","uy","co","cl","pe","ec","py",
@@ -63,11 +68,16 @@ const CODES = ["ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
 let currentTeam = -1;
 let stats = {};
 
-// Загрузка статистики из Google Sheets
+// Загрузка статистики из Google Sheets (Замените URL ниже на ваш реальный макрос)
 async function loadStats() {
-  const res = await fetch('https://script.google.com/macros/s/AKfycbzPSDY3YX3ptXjfXG5QSejj9KhbSmYSspXf9iBkgxEAB4JFZZ--L_2UVdaQ6zqv_Ykk/exec');
-  stats = await res.json();
-  renderGrid();
+  try {
+    const res = await fetch('google.com');
+    stats = await res.json();
+    renderGrid();
+  } catch (e) {
+    console.error("Ошибка загрузки данных:", e);
+    renderGrid(); // Рендерим пустую сетку, если БД недоступна
+  }
 }
 
 function renderGrid() {
@@ -75,15 +85,15 @@ function renderGrid() {
   grid.innerHTML = '';
   TEAMS.forEach((team, i) => {
     const s = stats[i] || {bless:0, curse:0};
-    grid.innerHTML += 
+    grid.innerHTML += `
       <div class="card" onclick="openDetail(${i})">
-        <img src="${FLAGS(CODES[i])}" onerror="this.src='https://flagcdn.com/w80/_unknown.png'">
+        <img src="${FLAGS(CODES[i])}" onerror="this.onerror=null; this.src='flagcdn.com';">
         <div class="name">${team}</div>
         <div class="counters">
           <span class="gold">🙏${s.bless||0}</span>
           <span class="red">🧿${s.curse||0}</span>
         </div>
-      </div>;
+      </div>`;
   });
 }
 
@@ -106,29 +116,39 @@ function updateDetail() {
   document.getElementById('dbless').innerText = s.bless||0;
   document.getElementById('dcurse').innerText = s.curse||0;
 }
-  function pay(type) {
-  const title = type==='bless' ? '🙏 Благословение '+TEAMS[currentTeam] : '🧿 Проклятие '+TEAMS[currentTeam];
-  const amount = type==='bless' ? 10 : 20;
+
+function pay(type) {
+  if (!window.Telegram || !window.Telegram.WebApp) {
+    alert("Пожалуйста, откройте приложение внутри Telegram");
+    return;
+  }
+
+  const title = type === 'bless' ? '🙏 Благословение ' + TEAMS[currentTeam] : '🧿 Проклятие ' + TEAMS[currentTeam];
+  const amount = type === 'bless' ? 10 : 20;
+  
   // Отправляем инвойс через Telegram API
   Telegram.WebApp.openInvoice({
     title: title,
-    description: type==='bless' ? 'Увеличить Силу' : 'Наложить Порчу',
-    payload: ${CODES[currentTeam]}_${type},
-    provider_token: '', // не нужен для Stars
+    description: type === 'bless' ? 'Увеличить Силу команды' : 'Наложить Порчу на команду',
+    payload: `${CODES[currentTeam]}_${type}`,
+    provider_token: '', // Оставляем пустым для платежей в Telegram Stars (XTR)
     currency: 'XTR',
     prices: [{label: title, amount: amount}]
   }, (status) => {
-    if(status === 'paid') {
-      // Обновляем счетчик на экране мгновенно
-      if(!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
+    if (status === 'paid') {
+      // Обновляем счетчик на экране мгновенно для пользователя
+      if (!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
       stats[currentTeam][type]++;
       updateDetail();
       renderGrid();
+    } else {
+      console.log("Статус платежа:", status);
     }
   });
 }
-  // Обновляем данные каждые 10 секунд
-setInterval(loadStats, 10000);
+
+// Обновляем данные каждые 15 секунд (увеличено, чтобы снизить нагрузку на лимиты Google скриптов)
+setInterval(loadStats, 15000);
 loadStats();
 </script>
 </body>
