@@ -59,14 +59,27 @@ const TEAMS = [
   "Швеция","Норвегия","Польша","Украина","Венгрия","Турция"
 ];
 
-const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.png`;
-const CODES = ["ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
-               "ma","jp","kr","sn","gh","ng","cm","tn","eg","sa","ir","qa",
-               "au","nz","us","ca","cr","jm","uy","co","cl","pe","ec","py",
-               "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"];
+const FLAGS = (code) => `github.io{code.toUpperCase()}.svg`;
 
-let currentTeam = -1;
-let stats = {};
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  TEAMS.forEach((team, i) => {
+    const s = stats[i] || {bless:0, curse:0};
+    
+    // Для Англии (gb) в этом пакете используется код GB, код верный. 
+    // Если какой-то флаг не подгрузится, onerror подставит стандартную заглушку.
+    grid.innerHTML += `
+      <div class="card" onclick="openDetail(${i})">
+        <img src="${FLAGS(CODES[i])}" onerror="this.src='github.io'">
+        <div class="name">${team}</div>
+        <div class="counters">
+          <span class="gold">🙏${s.bless||0}</span>
+          <span class="red">🧿${s.curse||0}</span>
+        </div>
+      </div>`;
+  });
+}
 
 // Загрузка статистики из Google Sheets (Замените URL ниже на ваш реальный макрос)
 async function loadStats() {
