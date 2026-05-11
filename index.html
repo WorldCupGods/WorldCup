@@ -1,48 +1,54 @@
-html<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>World Cup Gods</title>
 <script src="telegram.org"></script>
 <style>
-  body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; user-select: none; }
-  h1 { text-align:center; color:#ffd700; font-size:18px; margin:10px 0; }
-  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; } /* Оптимально для телефонов */
-  .card { background:#1a1f1a; border-radius:10px; padding:8px; text-align:center; cursor:pointer; border: 1px solid #222; }
-  .card img { width:40px; height:30px; border-radius:3px; object-fit: cover; }
-  .card .name { font-size:11px; margin:5px 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-  .counters { font-size:10px; display: flex; justify-content: space-around; }
+  body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; user-select: none; -webkit-user-select: none; }
+  h1 { text-align:center; color:#ffd700; font-size:18px; margin:10px 0; letter-spacing: 1px; }
+  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; }
+  .card { background:#1a1f1a; border-radius:10px; padding:10px 6px; text-align:center; cursor:pointer; border: 1px solid #252a25; transition: transform 0.1s; }
+  .card:active { transform: scale(0.95); }
+  .card img { width:45px; height:32px; border-radius:4px; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+  .card .name { font-size:12px; margin:6px 0 4px 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: 500; }
+  .counters { font-size:11px; display: flex; justify-content: space-around; font-weight: bold; }
   .gold { color:#ffd700; }
   .red { color:#ff4444; }
-  button { width:100%; padding:12px; border:none; border-radius:8px; margin:8px 0; font-weight:bold; cursor:pointer; }
+  button { width:100%; padding:14px; border:none; border-radius:10px; margin:8px 0; font-size:14px; font-weight:bold; cursor:pointer; transition: opacity 0.2s; }
+  button:active { opacity: 0.8; }
   .bless { background:#ffd700; color:#000; }
   .curse { background:#8b0000; color:#fff; }
-  .detail { display:none; padding:20px; text-align:center; }
-  .back { color:#ffd700; text-decoration:underline; margin-bottom:20px; display:block; cursor:pointer; }
+  .detail { display:none; padding:15px; text-align:center; }
+  .back { color:#ffd700; text-decoration:none; font-size:15px; font-weight:500; margin-bottom:20px; display:inline-block; cursor:pointer; border: 1px solid #ffd700; padding: 6px 16px; border-radius:20px; }
+  #loading { text-align: center; color: #888; padding: 40px; font-size: 14px; }
 </style>
 </head>
 <body>
 
 <div id="home">
   <h1>⚽️ WORLD CUP GODS</h1>
-  <div class="grid" id="grid">Загрузка данных...</div>
+  <div id="loading">Синхронизация с богами футбола...</div>
+  <div class="grid" id="grid"></div>
 </div>
 
 <div id="detail" class="detail">
-  <a class="back" onclick="closeDetail()">← Назад</a>
-  <img id="dflag" src="" width="120" style="border-radius:5px;"><br>
-  <h2 id="dname" style="font-size:24px; margin:15px 0;"></h2>
-  <div style="margin:20px 0; background: #1a1f1a; padding: 15px; border-radius:10px;">
-    <span class="gold">🙏 Благословений: <b id="dbless">0</b></span><br><br>
-    <span class="red">🧿 Проклятий: <b id="dcurse">0</b></span>
+  <div style="text-align: left;"><a class="back" onclick="closeDetail()">← Назад</a></div>
+  <img id="dflag" src="" width="140" style="border-radius:6px; box-shadow: 0 4px 10px rgba(0,0,0,0.7);"><br>
+  <h2 id="dname" style="font-size:26px; margin:15px 0 5px 0; color:#fff;"></h2>
+  
+  <div style="margin:20px 0; background: #131813; padding: 18px; border-radius:12px; border: 1px solid #222;">
+    <div style="font-size:16px; margin-bottom:10px;" class="gold">🙏 Благословений: <b id="dbless" style="font-size:18px;">0</b></div>
+    <div style="font-size:16px;" class="red">🧿 Проклятий: <b id="dcurse" style="font-size:18px;">0</b></div>
   </div>
+  
   <button class="bless" onclick="pay('bless')">🙏 БЛАГОСЛОВИТЬ (10 ⭐️)</button>
   <button class="curse" onclick="pay('curse')">🧿 ПРОКЛЯСТЬ (20 ⭐️)</button>
 </div>
 
 <script>
-// Инициализация Telegram WebApp
+// Нативная инициализация Telegram Mini Apps
 if (window.Telegram && window.Telegram.WebApp) {
   Telegram.WebApp.ready();
   Telegram.WebApp.expand();
@@ -59,29 +65,30 @@ const TEAMS = [
   "Швеция","Норвегия","Польша","Украина","Венгрия","Турция"
 ];
 
-// Массив CODES восстановлен и синхронизирован
-const CODES = ["ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
-               "ma","jp","kr","sn","gh","ng","cm","tn","eg","sa","ir","qa",
-               "au","nz","us","ca","cr","jm","uy","co","cl","pe","ec","py",
-               "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"];
+const CODES = [
+  "ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
+  "ma","jp","kr","sn","gh","ng","cm","tn","eg","sa","ir","qa",
+  "au","nz","us","ca","cr","jm","uy","co","cl","pe","ec","py",
+  "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"
+];
 
-// Надежный CDN источник для загрузки SVG флагов
+// Быстрый CDN для загрузки официальных SVG флагов (работает стабильно)
 const FLAGS = (code) => `cloudflare.com{code.toLowerCase()}.svg`;
 
 let currentTeam = -1;
 let stats = {};
 
-// Ссылка на ваш рабочий Google Apps Script
+// ⚠️ ЗАМЕНИТЕ ЭТОТ URL НА СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ ИЗ GOOGLE APPS SCRIPT
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPSDY3YX3ptXjfXG5QSejj9KhbSmYSspXf9iBkgxEAB4JFZZ--L_2UVdaQ6zqv_Ykk/exec';
 
 async function loadStats() {
   try {
     const res = await fetch(SCRIPT_URL);
     stats = await res.json();
+    document.getElementById('loading').style.display = 'none';
     renderGrid();
   } catch (e) {
-    console.error("Ошибка загрузки данных:", e);
-    renderGrid();
+    console.error("Ошибка сети при обращении к Таблице:", e);
   }
 }
 
@@ -122,49 +129,44 @@ function updateDetail() {
   document.getElementById('dcurse').innerText = s.curse||0;
 }
 
-// Корректная функция запроса платежного инвойса у Google скрипта
+// Запрос инвойса у Google API и вызов шторки оплаты
 async function pay(type) {
   if (!window.Telegram || !window.Telegram.WebApp) {
-    alert("Пожалуйста, откройте приложение внутри Telegram");
+    alert("Откройте приложение внутри Telegram бота.");
     return;
   }
 
-  // Показываем визуальный индикатор загрузки платежа
-  if (Telegram.WebApp.showScanQrPopup) {
-    Telegram.WebApp.showScanQrPopup({ text: "Создание платежа..." });
-    setTimeout(() => Telegram.WebApp.closeScanQrPopup(), 1000);
-  }
-
   try {
-    // Отправляем запрос серверной части Google Apps Script на генерацию реальной платежной ссылки
+    // Получаем подписанную ссылку на инвойс вида t.me/invoice... от Google Apps Script
     const response = await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`);
     const data = await response.json();
     
-    if (!data.invoice_url) {
-      Telegram.WebApp.showAlert("Ошибка: не удалось сгенерировать инвойс. Проверьте Bot Token в Google Script.");
+    if (!data || !data.invoice_url) {
+      Telegram.WebApp.showAlert("Не удалось сформировать инвойс. Проверьте Bot Token в настройках Google Скрипта.");
       return;
     }
 
-    // Передаем полученную t.me/invoice... ссылку в интерфейс Telegram
+    // Вызываем нативный платежный процесс Telegram Stars
     Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
       if (status === 'paid') {
-        Telegram.WebApp.showAlert("🎉 Оплата успешна! Ваш голос отправлен в базу данных.");
+        Telegram.WebApp.showAlert("🎉 Голос зафиксирован! Звезды успешно списаны.");
+        // Мгновенный визуальный отклик для пользователя
         if (!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
         stats[currentTeam][type]++;
         updateDetail();
         renderGrid();
       } else if (status === 'failed') {
-        Telegram.WebApp.showAlert("❌ Ошибка при проведении платежа Stars.");
+        Telegram.WebApp.showAlert("❌ Транзакция отменена или произошла ошибка.");
       }
     });
 
   } catch (error) {
-    console.error("Ошибка шлюза платежей:", error);
-    Telegram.WebApp.showAlert("Сервер базы данных временно недоступен.");
+    console.error("Критическая ошибка шлюза:", error);
+    Telegram.WebApp.showAlert("Сбой связи с сервером платежей.");
   }
 }
 
-// Автообновление раз в 20 секунд для снижения лимитов Google квот
+// Автообновление данных каждые 20 секунд
 setInterval(loadStats, 20000);
 loadStats();
 </script>
