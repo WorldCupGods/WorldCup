@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>World Cup Gods</title>
+<!-- ИСПРАВЛЕНО: Официальный скрипт Telegram Mini Apps -->
 <script src="telegram.org"></script>
 <style>
   body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; user-select: none; -webkit-user-select: none; }
@@ -35,7 +36,8 @@
 
 <div id="detail" class="detail">
   <div style="text-align: left;"><a class="back" onclick="closeDetail()">← Назад</a></div>
-  <img id="dflag" src="" width="140" style="border-radius:6px; box-shadow: 0 4px 10px rgba(0,0,0,0.7);"><br>
+  <!-- ИСПРАВЛЕНО: Добавлена дефолтная заглушка на ошибку загрузки флага -->
+  <img id="dflag" src="" width="140" style="border-radius:6px; box-shadow: 0 4px 10px rgba(0,0,0,0.7);" onerror="this.onerror=null; this.src='flagcdn.com';"><br>
   <h2 id="dname" style="font-size:26px; margin:15px 0 5px 0; color:#fff;"></h2>
   
   <div style="margin:20px 0; background: #131813; padding: 18px; border-radius:12px; border: 1px solid #222;">
@@ -72,8 +74,8 @@ const CODES = [
   "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"
 ];
 
-// Быстрый CDN для загрузки официальных SVG флагов (работает стабильно)
-const FLAGS = (code) => `cloudflare.com{code.toLowerCase()}.svg`;
+// ИСПРАВЛЕНО: Синтаксис шаблонной строки и рабочий CDN для SVG-флагов
+const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.png`;
 
 let currentTeam = -1;
 let stats = {};
@@ -97,6 +99,7 @@ function renderGrid() {
   grid.innerHTML = '';
   TEAMS.forEach((team, i) => {
     const s = stats[i] || {bless:0, curse:0};
+    // ИСПРАВЛЕНО: Синтаксис FLAGS() и рабочий fallback-вариант флага ООН при ошибке
     grid.innerHTML += `
       <div class="card" onclick="openDetail(${i})">
         <img src="${FLAGS(CODES[i])}" onerror="this.onerror=null; this.src='flagcdn.com';">
