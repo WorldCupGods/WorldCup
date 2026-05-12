@@ -54,7 +54,6 @@ if (window.Telegram && window.Telegram.WebApp) {
   Telegram.WebApp.expand();
 }
 
-// 48 официальных стран-участниц ЧМ-2026 (включая хозяев турнира и сильные латиноамериканские сборные)
 const TEAMS = [
   "USA", "Canada", "Mexico", "Argentina", "Brazil", "Uruguay", 
   "Colombia", "Ecuador", "Chile", "Peru", "Paraguay", "Venezuela", 
@@ -77,23 +76,25 @@ const CODES = [
   "kr", "sa", "au", "ir", "qa", "nz"
 ];
 
-// ИСПРАВЛЕНО: Добавлен корректный путь к PNG флагам на бесплатном CDN
+// Полный рабочий CDN путь для флагов
 const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.png`;
 
 let currentTeam = -1;
 let stats = {};
 
-// ⚠️ REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2aJ1SakeNg0Lt1-yFPNvAcmq7WmQCdXGl-sZM0t1qn41jMR_3QSU0IGDFTM8epEYS/exec';
+// ⚠️ ЗАМЕНИТЕ ЭТОТ URL НА СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ ИЗ GOOGLE APPS SCRIPT
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEh-xT1HUMkbkRyhOmVknRjOiugjkXDRH9rHcIRzbq8ZdSSYI3Kc78yY9Jz03qzYoU/exec';
 
 async function loadStats() {
   try {
-    const res = await fetch(SCRIPT_URL);
+    // Решение бага бесконечной загрузки: Перенаправляем fetch следовать за Google Redirects
+    const res = await fetch(SCRIPT_URL, { method: "GET", redirect: "follow" });
     stats = await res.json();
     document.getElementById('loading').style.display = 'none';
     renderGrid();
   } catch (e) {
-    console.error("Network error while fetching sheet data:", e);
+    document.getElementById('loading').innerText = "Database connection error!";
+    console.error("Network error:", e);
   }
 }
 
@@ -141,7 +142,7 @@ async function pay(type) {
   }
 
   try {
-    const response = await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`);
+    const response = await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`, { method: "GET", redirect: "follow" });
     const data = await response.json();
     
     if (!data || !data.invoice_url) {
@@ -167,6 +168,7 @@ async function pay(type) {
   }
 }
 
+// Автообновление раз в 20 секунд
 setInterval(loadStats, 20000);
 loadStats();
 </script>
