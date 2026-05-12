@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Fanatic World Cup</title>
+<title>Fanatic World Cup 2026</title>
 <!-- Telegram Mini Apps Official API -->
 <script src="telegram.org"></script>
 <style>
@@ -29,7 +29,7 @@
 <body>
 
 <div id="home">
-  <h1>⚽️ FANATIC WORLD CUP</h1>
+  <h1>⚽️ FANATIC WORLD CUP 2026</h1>
   <div id="loading">Syncing with football gods...</div>
   <div class="grid" id="grid"></div>
 </div>
@@ -49,33 +49,35 @@
 </div>
 
 <script>
-// Telegram Mini Apps Native Initialization
 if (window.Telegram && window.Telegram.WebApp) {
   Telegram.WebApp.ready();
   Telegram.WebApp.expand();
 }
 
-// Переведенные названия стран на английский язык
+// 48 официальных стран-участниц ЧМ-2026 (включая хозяев турнира и сильные латиноамериканские сборные)
 const TEAMS = [
-  "Argentina","Brazil","Mexico","France","England","Germany",
-  "Spain","Portugal","Italy","Netherlands","Belgium","Croatia",
-  "Morocco","Japan","South Korea","Senegal","Ghana","Nigeria",
-  "Cameroon","Tunisia","Egypt","Saudi Arabia","Iran","Qatar",
-  "Australia","New Zealand","USA","Canada","Costa Rica","Jamaica",
-  "Uruguay","Colombia","Chile","Peru","Ecuador","Paraguay",
-  "Venezuela","Bolivia","Switzerland","Austria","Serbia","Denmark",
-  "Sweden","Norway","Poland","Ukraine","Hungary","Turkey"
+  "USA", "Canada", "Mexico", "Argentina", "Brazil", "Uruguay", 
+  "Colombia", "Ecuador", "Chile", "Peru", "Paraguay", "Venezuela", 
+  "Costa Rica", "Panama", "Jamaica", "Honduras", "France", "England", 
+  "Germany", "Spain", "Portugal", "Italy", "Netherlands", "Belgium", 
+  "Croatia", "Italy", "Denmark", "Switzerland", "Serbia", "Austria", 
+  "Poland", "Ukraine", "Turkey", "Morocco", "Senegal", "Nigeria", 
+  "Egypt", "Cameroon", "Ghana", "Algeria", "Tunisia", "Japan", 
+  "South Korea", "Saudi Arabia", "Australia", "Iran", "Qatar", "New Zealand"
 ];
 
 const CODES = [
-  "ar","br","mx","fr","gb","de","es","pt","it","nl","be","hr",
-  "ma","jp","kr","sn","gh","ng","cm","tn","eg","sa","ir","qa",
-  "au","nz","us","ca","cr","jm","uy","co","cl","pe","ec","py",
-  "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"
+  "us", "ca", "mx", "ar", "br", "uy", 
+  "co", "ec", "cl", "pe", "py", "ve", 
+  "cr", "pa", "jm", "hn", "fr", "gb", 
+  "de", "es", "pt", "it", "nl", "be", 
+  "hr", "it", "dk", "ch", "rs", "at", 
+  "pl", "ua", "tr", "ma", "sn", "ng", 
+  "eg", "cm", "gh", "dz", "tn", "jp", 
+  "kr", "sa", "au", "ir", "qa", "nz"
 ];
 
-// Fixed CDN link for SVG flags
-const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.svg`;
+const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.png`;
 
 let currentTeam = -1;
 let stats = {};
@@ -131,7 +133,6 @@ function updateDetail() {
   document.getElementById('dcurse').innerText = s.curse||0;
 }
 
-// Request invoice link from Google API and invoke Telegram Stars payment checkout
 async function pay(type) {
   if (!window.Telegram || !window.Telegram.WebApp) {
     alert("Please open this app inside a Telegram Bot.");
@@ -147,7 +148,6 @@ async function pay(type) {
       return;
     }
 
-    // Trigger Telegram Stars native payment interface
     Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
       if (status === 'paid') {
         Telegram.WebApp.showAlert("🎉 Vote recorded! Stars successfully deducted.");
@@ -166,7 +166,6 @@ async function pay(type) {
   }
 }
 
-// Auto-refresh data every 20 seconds
 setInterval(loadStats, 20000);
 loadStats();
 </script>
