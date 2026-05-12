@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>World Cup Gods</title>
-<!-- ИСПРАВЛЕНО: Официальный скрипт Telegram Mini Apps -->
+<title>Fanatic World Cup</title>
+<!-- Telegram Mini Apps Official API -->
 <script src="telegram.org"></script>
 <style>
   body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui; user-select: none; -webkit-user-select: none; }
@@ -29,42 +29,42 @@
 <body>
 
 <div id="home">
-  <h1>⚽️ WORLD CUP GODS</h1>
-  <div id="loading">Синхронизация с богами футбола...</div>
+  <h1>⚽️ FANATIC WORLD CUP</h1>
+  <div id="loading">Syncing with football gods...</div>
   <div class="grid" id="grid"></div>
 </div>
 
 <div id="detail" class="detail">
-  <div style="text-align: left;"><a class="back" onclick="closeDetail()">← Назад</a></div>
-  <!-- ИСПРАВЛЕНО: Добавлена дефолтная заглушка на ошибку загрузки флага -->
+  <div style="text-align: left;"><a class="back" onclick="closeDetail()">← Back</a></div>
   <img id="dflag" src="" width="140" style="border-radius:6px; box-shadow: 0 4px 10px rgba(0,0,0,0.7);" onerror="this.onerror=null; this.src='flagcdn.com';"><br>
   <h2 id="dname" style="font-size:26px; margin:15px 0 5px 0; color:#fff;"></h2>
   
   <div style="margin:20px 0; background: #131813; padding: 18px; border-radius:12px; border: 1px solid #222;">
-    <div style="font-size:16px; margin-bottom:10px;" class="gold">🙏 Благословений: <b id="dbless" style="font-size:18px;">0</b></div>
-    <div style="font-size:16px;" class="red">🧿 Проклятий: <b id="dcurse" style="font-size:18px;">0</b></div>
+    <div style="font-size:16px; margin-bottom:10px;" class="gold">🙏 Blessings: <b id="dbless" style="font-size:18px;">0</b></div>
+    <div style="font-size:16px;" class="red">🧿 Curses: <b id="dcurse" style="font-size:18px;">0</b></div>
   </div>
   
-  <button class="bless" onclick="pay('bless')">🙏 БЛАГОСЛОВИТЬ (10 ⭐️)</button>
-  <button class="curse" onclick="pay('curse')">🧿 ПРОКЛЯСТЬ (20 ⭐️)</button>
+  <button class="bless" onclick="pay('bless')">🙏 BLESS TEAM (10 ⭐️)</button>
+  <button class="curse" onclick="pay('curse')">🧿 CURSE TEAM (20 ⭐️)</button>
 </div>
 
 <script>
-// Нативная инициализация Telegram Mini Apps
+// Telegram Mini Apps Native Initialization
 if (window.Telegram && window.Telegram.WebApp) {
   Telegram.WebApp.ready();
   Telegram.WebApp.expand();
 }
 
+// Переведенные названия стран на английский язык
 const TEAMS = [
-  "Аргентина","Бразилия","Мексика","Франция","Англия","Германия",
-  "Испания","Португалия","Италия","Нидерланды","Бельгия","Хорватия",
-  "Марокко","Япония","Корея","Сенегал","Гана","Нигерия",
-  "Камерун","Тунис","Египет","Сауд.Аравия","Иран","Катар",
-  "Австралия","Н.Зеландия","США","Канада","Коста-Рика","Ямайка",
-  "Уругвай","Колумбия","Чили","Перу","Эквадор","Парагвай",
-  "Венесуэла","Боливия","Швейцария","Австрия","Сербия","Дания",
-  "Швеция","Норвегия","Польша","Украина","Венгрия","Турция"
+  "Argentina","Brazil","Mexico","France","England","Germany",
+  "Spain","Portugal","Italy","Netherlands","Belgium","Croatia",
+  "Morocco","Japan","South Korea","Senegal","Ghana","Nigeria",
+  "Cameroon","Tunisia","Egypt","Saudi Arabia","Iran","Qatar",
+  "Australia","New Zealand","USA","Canada","Costa Rica","Jamaica",
+  "Uruguay","Colombia","Chile","Peru","Ecuador","Paraguay",
+  "Venezuela","Bolivia","Switzerland","Austria","Serbia","Denmark",
+  "Sweden","Norway","Poland","Ukraine","Hungary","Turkey"
 ];
 
 const CODES = [
@@ -74,13 +74,13 @@ const CODES = [
   "ve","bo","ch","at","rs","dk","se","no","pl","ua","hu","tr"
 ];
 
-// ИСПРАВЛЕНО: Синтаксис шаблонной строки и рабочий CDN для SVG-флагов
-const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.png`;
+// Fixed CDN link for SVG flags
+const FLAGS = (code) => `flagcdn.com{code.toLowerCase()}.svg`;
 
 let currentTeam = -1;
 let stats = {};
 
-// ⚠️ ЗАМЕНИТЕ ЭТОТ URL НА СВОЙ URL ВЕБ-ПРИЛОЖЕНИЯ ИЗ GOOGLE APPS SCRIPT
+// ⚠️ REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPSDY3YX3ptXjfXG5QSejj9KhbSmYSspXf9iBkgxEAB4JFZZ--L_2UVdaQ6zqv_Ykk/exec';
 
 async function loadStats() {
@@ -90,7 +90,7 @@ async function loadStats() {
     document.getElementById('loading').style.display = 'none';
     renderGrid();
   } catch (e) {
-    console.error("Ошибка сети при обращении к Таблице:", e);
+    console.error("Network error while fetching sheet data:", e);
   }
 }
 
@@ -99,7 +99,6 @@ function renderGrid() {
   grid.innerHTML = '';
   TEAMS.forEach((team, i) => {
     const s = stats[i] || {bless:0, curse:0};
-    // ИСПРАВЛЕНО: Синтаксис FLAGS() и рабочий fallback-вариант флага ООН при ошибке
     grid.innerHTML += `
       <div class="card" onclick="openDetail(${i})">
         <img src="${FLAGS(CODES[i])}" onerror="this.onerror=null; this.src='flagcdn.com';">
@@ -132,44 +131,42 @@ function updateDetail() {
   document.getElementById('dcurse').innerText = s.curse||0;
 }
 
-// Запрос инвойса у Google API и вызов шторки оплаты
+// Request invoice link from Google API and invoke Telegram Stars payment checkout
 async function pay(type) {
   if (!window.Telegram || !window.Telegram.WebApp) {
-    alert("Откройте приложение внутри Telegram бота.");
+    alert("Please open this app inside a Telegram Bot.");
     return;
   }
 
   try {
-    // Получаем подписанную ссылку на инвойс вида t.me/invoice... от Google Apps Script
     const response = await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`);
     const data = await response.json();
     
     if (!data || !data.invoice_url) {
-      Telegram.WebApp.showAlert("Не удалось сформировать инвойс. Проверьте Bot Token в настройках Google Скрипта.");
+      Telegram.WebApp.showAlert("Failed to generate invoice. Check Bot Token in Google Script settings.");
       return;
     }
 
-    // Вызываем нативный платежный процесс Telegram Stars
+    // Trigger Telegram Stars native payment interface
     Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
       if (status === 'paid') {
-        Telegram.WebApp.showAlert("🎉 Голос зафиксирован! Звезды успешно списаны.");
-        // Мгновенный визуальный отклик для пользователя
+        Telegram.WebApp.showAlert("🎉 Vote recorded! Stars successfully deducted.");
         if (!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
         stats[currentTeam][type]++;
         updateDetail();
         renderGrid();
       } else if (status === 'failed') {
-        Telegram.WebApp.showAlert("❌ Транзакция отменена или произошла ошибка.");
+        Telegram.WebApp.showAlert("❌ Transaction cancelled or failed.");
       }
     });
 
   } catch (error) {
-    console.error("Критическая ошибка шлюза:", error);
-    Telegram.WebApp.showAlert("Сбой связи с сервером платежей.");
+    console.error("Critical gateway error:", error);
+    Telegram.WebApp.showAlert("Connection to payment server failed.");
   }
 }
 
-// Автообновление данных каждые 20 секунд
+// Auto-refresh data every 20 seconds
 setInterval(loadStats, 20000);
 loadStats();
 </script>
