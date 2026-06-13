@@ -1,312 +1,149 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Fanatic World Cup 2026</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-  body { margin:0; padding:10px; background:#0a0f0a; color:white; font-family:system-ui, -apple-system, sans-serif; user-select: none; -webkit-user-select: none; }
-  h1 { text-align:center; color:#ffd700; font-size:18px; margin:10px 0 8px 0; letter-spacing: 1px; }
-  .langbar { display:flex; justify-content:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
-  .langbar button { width:auto; padding:5px 12px; font-size:12px; border-radius:20px; border:1px solid #333; background:#1a1f1a; color:#ccc; margin:0; }
-  .langbar button.active { border-color:#ffd700; color:#ffd700; background:#221f0a; font-weight:bold; }
-  .grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; }
-  .card { background:#1a1f1a; border-radius:10px; padding:10px 6px; text-align:center; cursor:pointer; border: 1px solid #252a25; transition: transform 0.1s; }
-  .card:active { transform: scale(0.95); }
-  .card img { width:45px; height:32px; border-radius:4px; object-fit: cover; box-shadow: 0 2px 4px rgba(0,0,0,0.5); background:#111; }
-  .card .name { font-size:12px; margin:6px 0 4px 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-weight: 500; }
-  .counters { font-size:11px; display: flex; justify-content: space-around; font-weight: bold; }
-  .gold { color:#ffd700; }
-  .red { color:#ff4444; }
-  button { width:100%; padding:14px; border:none; border-radius:10px; margin:8px 0; font-size:14px; font-weight:bold; cursor:pointer; transition: opacity 0.2s; }
-  button:active { opacity: 0.8; }
-  .bless { background:#ffd700; color:#000; }
-  .curse { background:#8b0000; color:#fff; }
-  .detail { display:none; padding:15px; text-align:center; }
-  .back { color:#ffd700; text-decoration:none; font-size:15px; font-weight:500; margin-bottom:20px; display:inline-block; cursor:pointer; border: 1px solid #ffd700; padding: 6px 16px; border-radius:20px; }
-  #loading { text-align: center; color: #888; padding: 40px; font-size: 14px; }
-</style>
-</head>
-<body>
+// Environment variables:
+// BOT_TOKEN - токен бота
+// CHANNEL_ID - -1003987863706
+// WEBHOOK_SECRET - e9d1710a05dfce1bed4df6e43e0dbeaf622b4067d795d78982f86c17335cddf7
+// VOTES_KV - namespace binding
 
-<div id="home">
-  <h1 id="t-title">⚽️ FANATIC WORLD CUP 2026</h1>
-  <div class="langbar" id="langbar"></div>
-  <div id="loading">Syncing with football gods...</div>
-  <div class="grid" id="grid"></div>
-</div>
+const TEAMS = [...]; // такой же массив
+const CODES = [...]; // для возможной валидации
 
-<div id="detail" class="detail">
-  <div style="text-align: left;"><a class="back" id="t-back" onclick="closeDetail()">← Back</a></div>
-  <img id="dflag" src="" width="140" style="border-radius:6px; box-shadow: 0 4px 10px rgba(0,0,0,0.7); background:#111;" 
-       onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';"><br>
-  <h2 id="dname" style="font-size:26px; margin:15px 0 5px 0; color:#fff;"></h2>
-  
-  <div style="margin:20px 0; background: #131813; padding: 18px; border-radius:12px; border: 1px solid #222;">
-    <div style="font-size:16px; margin-bottom:10px;" class="gold">🙏 <span id="t-blessings">Blessings:</span> <b id="dbless" style="font-size:18px;">0</b></div>
-    <div style="font-size:16px;" class="red">🧿 <span id="t-curses">Curses:</span> <b id="dcurse" style="font-size:18px;">0</b></div>
-  </div>
-  
-  <button class="bless" id="t-blessBtn" onclick="pay('bless')">🙏 BLESS TEAM (10 ⭐️)</button>
-  <button class="curse" id="t-curseBtn" onclick="pay('curse')">🧿 CURSE TEAM (20 ⭐️)</button>
-</div>
-
-<script>
-if (window.Telegram && window.Telegram.WebApp) {
-  Telegram.WebApp.ready();
-  Telegram.WebApp.expand();
-}
-
-const i18n = {
-  en: {
-    title: "⚽️ FANATIC WORLD CUP 2026",
-    loading: "Syncing with football gods...",
-    error: "Database connection error!",
-    back: "← Back",
-    blessings: "Blessings:",
-    curses: "Curses:",
-    blessBtn: "🙏 BLESS TEAM (10 ⭐️)",
-    curseBtn: "🧿 CURSE TEAM (20 ⭐️)",
-    tgAlert: "Please open this app inside a Telegram Bot.",
-    invoiceFail: "Failed to generate invoice. Check Bot Token in Google Script settings.",
-    paid: "🎉 Vote recorded! Stars successfully deducted.",
-    failed: "❌ Transaction cancelled or failed.",
-    connFail: "Connection to payment server failed."
-  },
-  es: {
-    title: "⚽️ FANÁTICO MUNDIAL 2026",
-    loading: "Sincronizando con los dioses del fútbol...",
-    error: "¡Error de conexión a la base de datos!",
-    back: "← Atrás",
-    blessings: "Bendiciones:",
-    curses: "Maldiciones:",
-    blessBtn: "🙏 BENDECIR EQUIPO (10 ⭐️)",
-    curseBtn: "🧿 MALDECIR EQUIPO (20 ⭐️)",
-    tgAlert: "Abre esta aplicación dentro de un bot de Telegram.",
-    invoiceFail: "Error al generar la factura. Verifica el Token del Bot en la configuración de Google Script.",
-    paid: "🎉 ¡Voto registrado! Estrellas descontadas con éxito.",
-    failed: "❌ Transacción cancelada o fallida.",
-    connFail: "Conexión al servidor de pagos fallida."
-  },
-  pt: {
-    title: "⚽️ FANÁTICO COPA DO MUNDO 2026",
-    loading: "Sincronizando com os deuses do futebol...",
-    error: "Erro de conexão com o banco de dados!",
-    back: "← Voltar",
-    blessings: "Bênçãos:",
-    curses: "Maldições:",
-    blessBtn: "🙏 ABENÇOAR EQUIPE (10 ⭐️)",
-    curseBtn: "🧿 MALDIÇOAR EQUIPE (20 ⭐️)",
-    tgAlert: "Abra este aplicativo dentro de um Bot do Telegram.",
-    invoiceFail: "Falha ao gerar fatura. Verifique o Token do Bot nas configurações do Google Script.",
-    paid: "🎉 Voto registrado! Estrelas descontadas com sucesso.",
-    failed: "❌ Transação cancelada ou falhou.",
-    connFail: "Falha na conexão com o servidor de pagamentos."
-  },
-  fr: {
-    title: "⚽️ FANATIQUE COUPE DU MONDE 2026",
-    loading: "Synchronisation avec les dieux du football...",
-    error: "Erreur de connexion à la base de données !",
-    back: "← Retour",
-    blessings: "Bénédictions :",
-    curses: "Malédictions :",
-    blessBtn: "🙏 BÉNIR L'ÉQUIPE (10 ⭐️)",
-    curseBtn: "🧿 MAUDIRE L'ÉQUIPE (20 ⭐️)",
-    tgAlert: "Veuillez ouvrir cette application dans un bot Telegram.",
-    invoiceFail: "Échec de la génération de la facture. Vérifiez le jeton du bot dans les paramètres Google Script.",
-    paid: "🎉 Vote enregistré ! Étoiles déduites avec succès.",
-    failed: "❌ Transaction annulée ou échouée.",
-    connFail: "Connexion au serveur de paiement échouée."
-  },
-  de: {
-    title: "⚽️ FANATIKER WM 2026",
-    loading: "Synchronisation mit den Fußballgöttern...",
-    error: "Datenbankverbindungsfehler!",
-    back: "← Zurück",
-    blessings: "Segnungen:",
-    curses: "Flüche:",
-    blessBtn: "🙏 TEAM SEGNEN (10 ⭐️)",
-    curseBtn: "🧿 TEAM VERFLUCHEN (20 ⭐️)",
-    tgAlert: "Bitte öffnen Sie diese App in einem Telegram-Bot.",
-    invoiceFail: "Rechnung konnte nicht erstellt werden. Überprüfen Sie den Bot-Token in den Google Script-Einstellungen.",
-    paid: "🎉 Stimme registriert! Sterne erfolgreich abgezogen.",
-    failed: "❌ Transaktion abgebrochen oder fehlgeschlagen.",
-    connFail: "Verbindung zum Zahlungsserver fehlgeschlagen."
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    // CORS
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Type': 'application/json'
+    };
+    
+    if (request.method === 'OPTIONS') return new Response(null, { headers });
+    
+    // API routes
+    if (url.pathname === '/stats' && request.method === 'GET') {
+      return getStats(env, headers);
+    }
+    
+    if (url.pathname === '/invoice' && request.method === 'GET') {
+      const teamId = parseInt(url.searchParams.get('teamId'));
+      const type = url.searchParams.get('type');
+      return createInvoice(teamId, type, env, headers);
+    }
+    
+    if (url.pathname === '/webhook' && request.method === 'POST') {
+      return handleWebhook(request, env);
+    }
+    
+    // Fallback: serve frontend HTML if needed, else 404
+    // But user already has site running, so maybe just return 404 for root
+    return new Response('Not Found', { status: 404 });
   }
 };
 
-const LANGS = [
-  {code:'en', label:'EN'},
-  {code:'es', label:'ES'},
-  {code:'pt', label:'PT'},
-  {code:'fr', label:'FR'},
-  {code:'de', label:'DE'}
-];
+async function getStats(env, headers) {
+  const data = await env.VOTES_KV.get('stats');
+  const stats = data ? JSON.parse(data) : {};
+  return new Response(JSON.stringify(stats), { headers });
+}
 
-let currentLang = 'en';
-let currentTeam = -1;
-let stats = {};
-
-const TEAMS = [
-  "USA", "Canada", "Mexico", "Argentina", "Brazil", "Uruguay", 
-  "Colombia", "Ecuador", "Chile", "Peru", "Paraguay", "Venezuela", 
-  "Costa Rica", "Panama", "Jamaica", "Honduras", "France", "England", 
-  "Germany", "Spain", "Portugal", "Italy", "Netherlands", "Belgium", 
-  "Croatia", "Wales", "Denmark", "Switzerland", "Serbia", "Austria", 
-  "Poland", "Ukraine", "Turkey", "Morocco", "Senegal", "Nigeria", 
-  "Egypt", "Cameroon", "Ghana", "Algeria", "Tunisia", "Japan", 
-  "South Korea", "Saudi Arabia", "Australia", "Iran", "Qatar", "New Zealand"
-];
-
-const CODES = [
-  "us", "ca", "mx", "ar", "br", "uy", 
-  "co", "ec", "cl", "pe", "py", "ve", 
-  "cr", "pa", "jm", "hn", "fr", "gb", 
-  "de", "es", "pt", "it", "nl", "be", 
-  "hr", "gb-wls", "dk", "ch", "rs", "at", 
-  "pl", "ua", "tr", "ma", "sn", "ng", 
-  "eg", "cm", "gh", "dz", "tn", "jp", 
-  "kr", "sa", "au", "ir", "qa", "nz"
-];
-
-const FLAGS = (code) => `https://flagcdn.com/w80/${code.toLowerCase()}.png`;
-
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEh-xT1HUMkbkRyhOmVknRjOiugjkXDRH9rHcIRzbq8ZdSSYI3Kc78yY9Jz03qzYoU/exec';
-
-function detectLang() {
-  const saved = localStorage.getItem('fwc_lang');
-  if (saved && i18n[saved]) return saved;
-  const tgLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-  if (tgLang) {
-    const base = tgLang.split('-')[0];
-    if (i18n[base]) return base;
+async function createInvoice(teamId, type, env, headers) {
+  if (isNaN(teamId) || teamId < 0 || teamId >= 48) {
+    return new Response(JSON.stringify({error: 'Invalid team'}), { status: 400, headers });
   }
-  return 'en';
-}
-
-function t(key) {
-  return i18n[currentLang]?.[key] ?? i18n['en'][key];
-}
-
-function setLang(code) {
-  currentLang = code;
-  localStorage.setItem('fwc_lang', code);
-  updateTexts();
-  renderLangBar();
-  renderGrid();
-  if (document.getElementById('detail').style.display === 'block') updateDetail();
-}
-
-function renderLangBar() {
-  const bar = document.getElementById('langbar');
-  bar.innerHTML = '';
-  LANGS.forEach(l => {
-    const btn = document.createElement('button');
-    btn.textContent = l.label;
-    if (l.code === currentLang) btn.className = 'active';
-    btn.onclick = () => setLang(l.code);
-    bar.appendChild(btn);
+  if (type !== 'bless' && type !== 'curse') {
+    return new Response(JSON.stringify({error: 'Invalid type'}), { status: 400, headers });
+  }
+  
+  const amount = type === 'bless' ? 10 : 20;
+  const teamName = TEAMS[teamId];
+  
+  const payload = JSON.stringify({ teamId, type, t: Date.now() });
+  
+  const res = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/createInvoiceLink`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      title: `${teamName} — ${type === 'bless' ? 'Blessing' : 'Curse'}`,
+      description: `Vote for ${teamName} in Fanatic World Cup 2026`,
+      payload: payload,
+      provider_token: "",
+      currency: "XTR",
+      prices: [{label: "Vote", amount: amount}]
+    })
   });
-}
-
-function updateTexts() {
-  document.getElementById('t-title').textContent = t('title');
-  document.getElementById('loading').textContent = t('loading');
-  document.getElementById('t-back').textContent = t('back');
-  document.getElementById('t-blessings').textContent = t('blessings');
-  document.getElementById('t-curses').textContent = t('curses');
-  document.getElementById('t-blessBtn').textContent = t('blessBtn');
-  document.getElementById('t-curseBtn').textContent = t('curseBtn');
-}
-
-async function loadStats() {
-  try {
-    const res = await fetch(SCRIPT_URL, { method: "GET", redirect: "follow" });
-    stats = await res.json();
-    document.getElementById('loading').style.display = 'none';
-    renderGrid();
-  } catch (e) {
-    document.getElementById('loading').innerText = t('error');
-    console.error("Network error:", e);
+  
+  const data = await res.json();
+  if (!data.ok) {
+    return new Response(JSON.stringify({error: data.description}), { status: 500, headers });
   }
+  
+  return new Response(JSON.stringify({invoice_url: data.result.invoice_link}), { headers });
 }
 
-function renderGrid() {
-  const grid = document.getElementById('grid');
-  grid.innerHTML = '';
-  TEAMS.forEach((team, i) => {
-    const s = stats[i] || {bless:0, curse:0};
-    grid.innerHTML += `
-      <div class="card" onclick="openDetail(${i})">
-        <img src="${FLAGS(CODES[i])}" onerror="this.onerror=null; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';">
-        <div class="name">${team}</div>
-        <div class="counters">
-          <span class="gold">🙏${s.bless||0}</span>
-          <span class="red">🧿${s.curse||0}</span>
-        </div>
-      </div>`;
-  });
-}
-
-function openDetail(i) {
-  currentTeam = i;
-  document.getElementById('home').style.display = 'none';
-  document.getElementById('detail').style.display = 'block';
-  updateDetail();
-}
-
-function closeDetail() {
-  document.getElementById('home').style.display = 'block';
-  document.getElementById('detail').style.display = 'none';
-}
-
-function updateDetail() {
-  const s = stats[currentTeam] || {bless:0, curse:0};
-  document.getElementById('dflag').src = FLAGS(CODES[currentTeam]);
-  document.getElementById('dname').innerText = TEAMS[currentTeam];
-  document.getElementById('dbless').innerText = s.bless||0;
-  document.getElementById('dcurse').innerText = s.curse||0;
-}
-
-async function pay(type) {
-  if (!window.Telegram || !window.Telegram.WebApp) {
-    alert(t('tgAlert'));
-    return;
+async function handleWebhook(request, env) {
+  // Verify secret
+  const secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
+  if (secret !== env.WEBHOOK_SECRET) {
+    return new Response('Unauthorized', { status: 401 });
   }
-
-  try {
-    const response = await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`, { method: "GET", redirect: "follow" });
-    const data = await response.json();
-    
-    if (!data || !data.invoice_url) {
-      Telegram.WebApp.showAlert(t('invoiceFail'));
-      return;
-    }
-
-    Telegram.WebApp.openInvoice(data.invoice_url, (status) => {
-      if (status === 'paid') {
-        Telegram.WebApp.showAlert(t('paid'));
-        if (!stats[currentTeam]) stats[currentTeam] = {bless:0, curse:0};
-        stats[currentTeam][type]++;
-        updateDetail();
-        renderGrid();
-      } else if (status === 'failed') {
-        Telegram.WebApp.showAlert(t('failed'));
-      }
+  
+  const update = await request.json();
+  
+  // Pre-checkout
+  if (update.pre_checkout_query) {
+    await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/answerPreCheckoutQuery`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        pre_checkout_query_id: update.pre_checkout_query.id,
+        ok: true
+      })
     });
-
-  } catch (error) {
-    console.error("Critical gateway error:", error);
-    Telegram.WebApp.showAlert(t('connFail'));
+    return new Response('OK');
   }
+  
+  // Successful payment
+  if (update.message?.successful_payment) {
+    const payment = update.message.successful_payment;
+    let payload;
+    try {
+      payload = JSON.parse(payment.invoice_payload);
+    } catch (e) {
+      return new Response('Bad payload', { status: 400 });
+    }
+    
+    const { teamId, type } = payload;
+    if (typeof teamId !== 'number' || (type !== 'bless' && type !== 'curse')) {
+      return new Response('Invalid payload', { status: 400 });
+    }
+    
+    // Update KV
+    const data = await env.VOTES_KV.get('stats');
+    const stats = data ? JSON.parse(data) : {};
+    if (!stats[teamId]) stats[teamId] = { bless: 0, curse: 0 };
+    stats[teamId][type] = (stats[teamId][type] || 0) + 1;
+    await env.VOTES_KV.put('stats', JSON.stringify(stats));
+    
+    // Notify channel
+    const teamName = TEAMS[teamId];
+    const emoji = type === 'bless' ? '🙏' : '🧿';
+    const actionText = type === 'bless' ? 'Blessing' : 'Curse';
+    const total = stats[teamId][type];
+    
+    await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        chat_id: env.CHANNEL_ID,
+        text: `${emoji} <b>${teamName}</b> received a new ${actionText}!\nTotal ${type}s: <b>${total}</b>`,
+        parse_mode: 'HTML'
+      })
+    });
+    
+    return new Response('OK');
+  }
+  
+  return new Response('OK');
 }
-
-currentLang = detectLang();
-renderLangBar();
-updateTexts();
-setInterval(loadStats, 20000);
-loadStats();
-</script>
-</body>
-</html>
