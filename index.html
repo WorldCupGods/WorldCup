@@ -1,123 +1,64 @@
-const TEAMS = [
-  "USA", "Canada", "Mexico", "Argentina", "Brazil", "Uruguay", 
-  "Colombia", "Ecuador", "Chile", "Peru", "Paraguay", "Venezuela", 
-  "Costa Rica", "Panama", "Jamaica", "Honduras", "France", "England", 
-  "Germany", "Spain", "Portugal", "Italy", "Netherlands", "Belg: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+const TEAMS = ["USA","Canada","Mexico","Argentina","Brazil","Uruguay","Colombia","Ecuador","Chile","Peru","Paraguay","Venezuela","Costa Rica","Panama","Jamaica","Honduras","France","England","Germany","Spain","Portugal","Italy","Netherlands","Belgium","Croatia","Wales","Denmark","Switzerland","Serbia","Austria","Poland","Ukraine","Turkey","Morocco","Senegal","Nigeria","Egypt","Cameroon","Ghana","Algeria","Tunisia","Japan","South Korea","Saudi Arabia","Australia","Iran","Qatar","New Zealand"];
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, X-Telegram-Bot-Api-Secret-Token' };
+    if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
+
+    if (url.pathname === '/stats' && request.method === 'GET') {
+      const raw = await env.VOTES_KV.get('stats');
+      return json(raw ? JSON.parse(raw) : {}, cors);
     }
-    
-    // API: Invoice
+
     if (url.pathname === '/invoice' && request.method === 'GET') {
       const teamId = parseInt(url.searchParams.get('teamId'));
       const type = url.searchParams.get('type');
+      if (isNaN(teamId) || teamId < 0 || teamId >= TEAMS.length || (type !== 'bless' && type !== 'curse')) return json({ error: 'bad params' }, cors, 400);
       
-      if (isNaN(teamId) || teamId < 0 || teamId >= TEAMS.length || (type !== 'bless' && type !== 'curse')) {
-        return new Response(JSON.stringify({error: 'Invalid params'}), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      const amount = type === 'bless' ? 10 : 20;
-      const payload = JSON.stringify({ teamId, type, t: Date.now() });
-      
-      const res = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/createInvoiceLink`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          title: `${TEAMS[teamId]} — ${type === 'bless' ? 'Blessing' : 'Curse'}`,
-          description: `Vote for ${TEAMS[teamId]} in Fanatic World Cup 2026`,
-          payload,
-          provider_token: "",
-          currency: "XTR",
-          prices: [{label: "Vote", amount: amount}]
-        })
+      const tgRes = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/createInvoiceLink`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: `${TEAMS[teamId]} — ${type === 'bless' ? 'Bless' : 'Curse'}`, description: `Vote for ${TEAMS[teamId]}`, payload: JSON.stringify({ teamId, type, t: Date.now() }), provider_token: "", currency: "XTR", prices: [{ label: "Vote", amount: type === 'bless' ? 10 : 20 }] })
       });
-      
-      const data = await res.json();
-      if (!data.ok) {
-        return new Response(JSON.stringify({error: data.description}), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      return new Response(JSON.stringify({invoice_url: data.result.invoice_link}), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      const tgData = await tgRes.json();
+      return tgData.ok ? json({ invoice_url: tgData.result.invoice_link }, cors) : json({ error: tgData.description }, cors, 500);
     }
-    
-    // Webhook
+
     if (url.pathname === '/webhook' && request.method === 'POST') {
-      const secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
-      if (secret !== env.WEBHOOK_SECRET) {
-        return new Response('Unauthorized', { status: 401 });
-      }
-      
-      const update = await request.json();
-      
-      // Pre-checkout query
-      if (update.pre_checkout_query) {
-        await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/answerPreCheckoutQuery`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            pre_checkout_query_id: update.pre_checkout_query.id,
-            ok: true
-          })
-        });
+      if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.WEBHOOK_SECRET) return new Response('Unauthorized', { status: 401 });
+      const upd = await request.json();
+      if (upd.pre_checkout_query) {
+        await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/answerPreCheckoutQuery`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pre_checkout_query_id: upd.pre_checkout_query.id, ok: true }) });
         return new Response('OK');
       }
-      
-      // Successful payment
-      if (update.message?.successful_payment) {
-        // Отвечаем сразу, обработку делаем в фоне
-        ctx.waitUntil(processPayment(update.message.successful_payment, env));
+      if (upd.message?.successful_payment) {
+        ctx.waitUntil(handlePayment(upd.message.successful_payment, env));
         return new Response('OK');
       }
-      
       return new Response('OK');
     }
-    
+
     return new Response('Not Found', { status: 404 });
   }
 };
 
-async function processPayment(payment, env) {
-  let payload;
-  try {
-    payload = JSON.parse(payment.invoice_payload);
-  } catch (e) {
-    console.error('Bad payload', e);
-    return;
-  }
+async function handlePayment(payment, env) {
+  let p; try { p = JSON.parse(payment.invoice_payload); } catch { return; }
+  const { teamId, type } = p;
+  if (typeof teamId !== 'number' || (type !== 'bless' && type !== 'curse')) return;
   
-  const { teamId, type } = payload;
-  if (typeof teamId !== 'number' || (type !== 'bless' && type !== 'curse')) {
-    console.error('Invalid payload');
-    return;
-  }
-  
-  // Update stats in KV
-  const data = await env.VOTES_KV.get('stats');
-  const stats = data ? JSON.parse(data) : {};
+  const raw = await env.VOTES_KV.get('stats');
+  const stats = raw ? JSON.parse(raw) : {};
   if (!stats[teamId]) stats[teamId] = { bless: 0, curse: 0 };
-  stats[teamId][type] = (stats[teamId][type] || 0) + 1;
+  stats[teamId][type]++;
   await env.VOTES_KV.put('stats', JSON.stringify(stats));
-  
-  // Notify channel
-  const teamName = TEAMS[teamId];
-  const emoji = type === 'bless' ? '🙏' : '🧿';
-  const actionText = type === 'bless' ? 'Blessings' : 'Curses';
-  const total = stats[teamId][type];
-  
+
   await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      chat_id: env.CHANNEL_ID,
-      text: `${emoji} <b>${teamName}</b> received a new vote!\nTotal ${actionText}: <b>${total}</b>`,
-      parse_mode: 'HTML'
-    })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: env.CHANNEL_ID, parse_mode: 'HTML', text: `${type==='bless'?'🙏':'🧿'} <b>${TEAMS[teamId]}</b> — новый голос!\nВсего: <b>${stats[teamId][type]}</b>` })
   });
+}
+
+function json(data, cors, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 }
