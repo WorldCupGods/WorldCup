@@ -90,7 +90,12 @@ function updateDetail(){const s=stats[currentTeam]||{bless:0,curse:0}; document.
 async function pay(type){
   if(!window.Telegram?.WebApp){alert(t('tgAlert')); return;}
   try{
-    const response=await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}`);
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    const user = tgUser?.username 
+              ? `@${tgUser.username}` 
+              : (tgUser?.first_name || 'Anonymous');
+    
+    const response=await fetch(`${SCRIPT_URL}?action=get_invoice&teamId=${currentTeam}&type=${type}&lang=${currentLang}&user=${encodeURIComponent(user)}`);
     const data=await response.json();
     if(!data?.invoice_url){Telegram.WebApp.showAlert(t('invoiceFail')); return;}
     
